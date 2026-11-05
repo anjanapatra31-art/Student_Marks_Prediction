@@ -5,7 +5,7 @@ import joblib
 app = Flask(__name__)
 
 # Load trained model
-model = joblib.load(open('student_marks_model.pkl', 'rb'))
+model = joblib.load('student_marks_model.pkl')
 
 HTML_PAGE = """
 <!DOCTYPE html>
@@ -83,30 +83,23 @@ HTML_PAGE = """
 
 <body>
     <div class="card">
-
         <h1>🎓 Student Marks Prediction</h1>
         <p>AI Based Performance Predictor</p>
 
         <form action="/predict" method="POST">
-
             <label>Hours Studied</label>
-            <input type="number" step="any"
-            name="hours" required>
+            <input type="number" step="any" name="hours" required>
 
             <label>Previous Marks</label>
-            <input type="number" step="any"
-            name="previous_marks" required>
+            <input type="number" step="any" name="previous_marks" required>
 
             <label>Sleep Hours</label>
-            <input type="number" step="any"
-            name="sleep" required>
+            <input type="number" step="any" name="sleep" required>
 
             <button type="submit">🚀 Predict Marks</button>
-
         </form>
 
         RESULT_PLACEHOLDER
-
     </div>
 </body>
 </html>
@@ -120,14 +113,12 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-
     try:
         hours = float(request.form['hours'])
         previous_marks = float(request.form['previous_marks'])
         sleep = float(request.form['sleep'])
 
         features = np.array([[hours, previous_marks, sleep]])
-
         prediction = model.predict(features)
 
         output = round(float(prediction[0]), 2)
@@ -140,14 +131,12 @@ def predict():
 
         return HTML_PAGE.replace("RESULT_PLACEHOLDER", result)
 
-    except Exception as e:
-
+    except Exception:
         result = """
         <div class="result-box">
             <h3>Prediction Error! Please check your inputs.</h3>
         </div>
         """
-
         return HTML_PAGE.replace("RESULT_PLACEHOLDER", result)
 
 
