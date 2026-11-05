@@ -1,123 +1,155 @@
 from flask import Flask, request
 import numpy as np
-import pickle
+import joblib
 
 app = Flask(__name__)
-model = pickle.load(open('model.pkl', 'rb'))
+
+# Load trained model
+model = joblib.load(open('student_marks_model.pkl', 'rb'))
 
 HTML_PAGE = """
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>Student Marks Prediction</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Marks Predictor</title>
+
     <style>
         body {
             background-color: #050c09;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
+            color: white;
+            font-family: Arial;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            margin: 0;
         }
+
         .card {
             background: #0b1a12;
             border: 1px solid #00ff88;
-            box-shadow: 0 0 25px rgba(0, 255, 136, 0.3);
             border-radius: 20px;
             padding: 25px;
-            width: 100%;
+            width: 90%;
             max-width: 400px;
             text-align: center;
+            box-shadow: 0 0 25px rgba(0,255,136,0.3);
         }
-        h1 { font-size: 22px; color: #ffffff; margin-bottom: 5px; }
-        .subtitle { font-size: 12px; color: #8fa396; margin-bottom: 20px; }
-        .input-group { text-align: left; margin-bottom: 12px; }
-        .input-group label { display: block; font-size: 13px; color: #00ff88; margin-bottom: 4px; }
-        .input-group input {
-            width: 100%;
-            padding: 10px;
-            background: #050c09;
-            border: 1px solid #1e3d2f;
-            border-radius: 8px;
-            color: #ffffff;
-            font-size: 15px;
-            box-sizing: border-box;
-            outline: none;
+
+        h1 {
+            font-size: 23px;
         }
-        .predict-btn {
-            background: linear-gradient(135deg, #00ff88, #00b359);
-            color: #000000;
-            font-weight: bold;
-            font-size: 15px;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 25px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .result-box {
+
+        label {
+            display: block;
+            text-align: left;
+            color: #00ff88;
             margin-top: 15px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
             background: #050c09;
+            color: white;
             border: 1px solid #00ff88;
+            border-radius: 8px;
+            margin-top: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            margin-top: 20px;
+            background: #00ff88;
+            color: black;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .result-box {
+            margin-top: 20px;
+            color: #00ff88;
             padding: 10px;
+            border: 1px solid #00ff88;
             border-radius: 8px;
         }
-        .result-box h3 { margin: 0; color: #00ff88; font-size: 16px; }
     </style>
 </head>
+
 <body>
     <div class="card">
-        <div style="font-size: 35px;">🎓</div>
-        <h1>Student Marks Prediction</h1>
-        <p class="subtitle">AI Based Performance Predictor</p>
-        
+
+        <h1>🎓 Student Marks Prediction</h1>
+        <p>AI Based Performance Predictor</p>
+
         <form action="/predict" method="POST">
-            <div class="input-group">
-                <label>Hours Studied</label>
-                <input type="number" step="any" name="hours" placeholder="e.g. 6" required>
-            </div>
-            
-            <div class="input-group">
-                <label>Previous Marks</label>
-                <input type="number" step="any" name="previous_marks" placeholder="e.g. 80" required>
-            </div>
 
-            <div class="input-group">
-                <label>Sleep Hours</label>
-                <input type="number" step="any" name="sleep" placeholder="e.g. 8" required>
-            </div>
+            <label>Hours Studied</label>
+            <input type="number" step="any"
+            name="hours" required>
 
-            <button type="submit" class="predict-btn">🚀 Predict Marks</button>
+            <label>Previous Marks</label>
+            <input type="number" step="any"
+            name="previous_marks" required>
+
+            <label>Sleep Hours</label>
+            <input type="number" step="any"
+            name="sleep" required>
+
+            <button type="submit">🚀 Predict Marks</button>
+
         </form>
 
-        ITEM_RESULT_PLACEHOLDER
+        RESULT_PLACEHOLDER
+
     </div>
 </body>
 </html>
 """
 
+
 @app.route('/')
 def home():
-    return HTML_PAGE.replace("ITEM_RESULT_PLACEHOLDER", "")
+    return HTML_PAGE.replace("RESULT_PLACEHOLDER", "")
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
+
     try:
-        float_features = [float(x) for x in request.form.values()]
-        final_features = [np.array(float_features)]
-        prediction = model.predict(final_features)
-        output = round(prediction[0], 2)
-        result_html = f'<div class="result-box"><h3>Predicted Marks: {output}</h3></div>'
-        return HTML_PAGE.replace("ITEM_RESULT_PLACEHOLDER", result_html)
+        hours = float(request.form['hours'])
+        previous_marks = float(request.form['previous_marks'])
+        sleep = float(request.form['sleep'])
+
+        features = np.array([[hours, previous_marks, sleep]])
+
+        prediction = model.predict(features)
+
+        output = round(float(prediction[0]), 2)
+
+        result = f"""
+        <div class="result-box">
+            <h3>Predicted Marks: {output}</h3>
+        </div>
+        """
+
+        return HTML_PAGE.replace("RESULT_PLACEHOLDER", result)
+
     except Exception as e:
-        err_html = '<div class="result-box"><h3>Please enter valid values.</h3></div>'
-        return HTML_PAGE.replace("ITEM_RESULT_PLACEHOLDER", err_html)
+
+        result = """
+        <div class="result-box">
+            <h3>Prediction Error! Please check your inputs.</h3>
+        </div>
+        """
+
+        return HTML_PAGE.replace("RESULT_PLACEHOLDER", result)
+
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
